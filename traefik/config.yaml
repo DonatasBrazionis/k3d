@@ -1,0 +1,15 @@
+# See: https://github.com/k3d-io/k3d/blob/main/docs/usage/configfile.md
+---
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+metadata:
+  name: my-cluster
+image: docker.io/rancher/k3s:v1.22.7-k3s1
+servers: 1
+agents: 3
+kubeAPI:
+  hostPort: "6550"
+ports:
+  - port: 8081:80
+    nodeFilters:
+      - loadbalancer

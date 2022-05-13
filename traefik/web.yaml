@@ -1,0 +1,80 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k3d-test-deployment
+  namespace: apps
+spec:
+  selector:
+    matchLabels:
+      app: k3d-test-deployment
+  template:
+    metadata:
+      labels:
+        app: k3d-test-deployment
+    spec:
+      containers:
+        - name: k3d-test-deployment
+          image: nginx:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k3d-test-service
+  namespace: apps
+spec:
+  selector:
+    app: k3d-test-deployment
+  ports:
+    - port: 3000
+      targetPort: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: k3d-test-ingress
+  namespace: apps
+  labels:
+    name: k3d-test-ingress
+  annotations:
+    # traefik
+    # traefik.ingress.kubernetes.io/router.middlewares: {namespace}-{StripPrefix-Middleware-name}@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: apps-path-prefix@kubernetescrd
+spec:
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: /k3d
+            backend:
+              service:
+                name: k3d-test-service
+                port:
+                  number: 3000
+
+---
+# StripPrefix Middleware
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: path-prefix
+  namespace: apps
+spec:
+  stripPrefix:
+    forceSlash: true
+    prefixes:
+      - /k3d
